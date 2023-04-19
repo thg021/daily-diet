@@ -1,2 +1,12 @@
 node_modules
+
+#database
+tmp/*.db
+
+#environment
+.env
+.env.test
+
+#deploy
 dist
+build
