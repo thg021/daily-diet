@@ -29,7 +29,7 @@ const getMealsParamsSchema = z.object({
 })
 
 type Meals = z.infer<typeof mealsSchema>
-type MealsID = z.infer<typeof getMealsIdSchema>
+type MealsID = Pick<Meals, 'id'>
 
 export async function mealsRoutes(app: FastifyInstance) {
   app.get(
@@ -62,6 +62,54 @@ export async function mealsRoutes(app: FastifyInstance) {
 
       return {
         meals,
+      }
+    },
+  )
+
+  app.get(
+    '/metrics',
+    {
+      preHandler: [CheckSessionId],
+    },
+    async (request) => {
+      type Ranking = Record<string, number>
+      interface Metrics {
+        totalRegisteredMeals: number
+        totalAmountMealsWithinDiet: number
+        totalNumberMealsOutsideDiet: number
+        ranking: Ranking
+      }
+      const sessionId = request.cookies.sessionId
+      const meals = await knex('meals').where('user_id', sessionId).select()
+
+      const metrics = meals.reduce(
+        (acc: Metrics, meal) => {
+          if (meal.check_diet) {
+            acc.totalAmountMealsWithinDiet++
+          }
+          if (!meal.check_diet) {
+            acc.totalNumberMealsOutsideDiet++
+          }
+
+          const date = meal.created_at.substring(0, 10)
+          if (!acc.ranking[date]) {
+            acc.ranking[date] = 0
+          }
+          acc.ranking[date]++
+          acc.totalRegisteredMeals++
+
+          return acc
+        },
+        {
+          totalRegisteredMeals: 0,
+          totalAmountMealsWithinDiet: 0,
+          totalNumberMealsOutsideDiet: 0,
+          ranking: {},
+        },
+      )
+
+      return {
+        ...metrics,
       }
     },
   )
