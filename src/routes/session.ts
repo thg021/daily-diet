@@ -2,7 +2,7 @@ import { FastifyInstance } from 'fastify'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import { knex } from '../database'
-import { validateParams } from '../middlewares/validateParams'
+import { validateParams } from '../middlewares/validate-params'
 
 const createUserSchema = z.object({
   name: z.string().min(3, {

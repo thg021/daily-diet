@@ -13,9 +13,10 @@ export const validateParams =
     })
 
     if (_validate.success === false) {
+      console.log(JSON.stringify(_validate.error.format()))
       const listErrors = findErrorsRequest(_validate.error.format())
         .map((error) => error._errors?.join(''))
-        .join('')
+        .join(' ')
 
       console.error(
         `❌ BadRequest ${JSON.stringify(request.body)}, params: ${listErrors}`,
