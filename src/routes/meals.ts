@@ -85,17 +85,17 @@ export async function mealsRoutes(app: FastifyInstance) {
       const metrics = meals.reduce(
         (acc: Metrics, meal) => {
           if (meal.check_diet) {
+            const date = meal.created_at.substring(0, 10)
             acc.totalAmountMealsWithinDiet++
+            if (!acc.ranking[date]) {
+              acc.ranking[date] = 0
+            }
+            acc.ranking[date]++
           }
           if (!meal.check_diet) {
             acc.totalNumberMealsOutsideDiet++
           }
 
-          const date = meal.created_at.substring(0, 10)
-          if (!acc.ranking[date]) {
-            acc.ranking[date] = 0
-          }
-          acc.ranking[date]++
           acc.totalRegisteredMeals++
 
           return acc
