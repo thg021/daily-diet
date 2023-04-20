@@ -5,7 +5,8 @@ import { CheckSessionId } from '../middlewares/check-session-id-exist'
 import { knex } from '../database'
 import { randomUUID } from 'node:crypto'
 
-const createMealsSchema = z.object({
+const mealsSchema = z.object({
+  id: z.string().uuid().optional(),
   name: z.string({
     required_error: 'Name is required.',
   }),
@@ -20,37 +21,17 @@ const getMealsIdSchema = z.object({
 })
 
 const createUserBodySchema = z.object({
-  body: createMealsSchema,
+  body: mealsSchema,
 })
 
 const getMealsParamsSchema = z.object({
   params: getMealsIdSchema,
 })
 
-type Meals = z.infer<typeof createMealsSchema>
+type Meals = z.infer<typeof mealsSchema>
 type MealsID = z.infer<typeof getMealsIdSchema>
 
 export async function mealsRoutes(app: FastifyInstance) {
-  app.post(
-    '/',
-    {
-      preHandler: [validateParams(createUserBodySchema), CheckSessionId],
-    },
-    async (request, reply) => {
-      const { checkDiet, description, name } = request.body as Meals
-
-      await knex('meals').insert({
-        id: randomUUID(),
-        name,
-        description,
-        check_diet: checkDiet,
-        user_id: request.cookies.sessionId,
-      })
-
-      return reply.status(201).send()
-    },
-  )
-
   app.get(
     '/',
     {
@@ -82,6 +63,47 @@ export async function mealsRoutes(app: FastifyInstance) {
       return {
         meals,
       }
+    },
+  )
+
+  app.post(
+    '/',
+    {
+      preHandler: [validateParams(createUserBodySchema), CheckSessionId],
+    },
+    async (request, reply) => {
+      const { checkDiet, description, name } = request.body as Meals
+
+      await knex('meals').insert({
+        id: randomUUID(),
+        name,
+        description,
+        check_diet: checkDiet,
+        user_id: request.cookies.sessionId,
+      })
+
+      return reply.status(201).send()
+    },
+  )
+
+  app.put(
+    '/',
+    { preHandler: [validateParams(createUserBodySchema), CheckSessionId] },
+    async (request, reply) => {
+      const { id, checkDiet, description, name } = request.body as Meals
+      const sessionId = request.cookies.sessionId
+      await knex('meals')
+        .where({
+          user_id: sessionId,
+          id,
+        })
+        .update({
+          name,
+          description,
+          check_diet: checkDiet,
+        })
+
+      return reply.status(200).send()
     },
   )
 
