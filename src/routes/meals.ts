@@ -15,11 +15,20 @@ const createMealsSchema = z.object({
   }),
 })
 
+const getMealsSchema = z.object({
+  id: z.string().uuid(),
+})
+
 const createUserBodySchema = z.object({
   body: createMealsSchema,
 })
 
+const getMealsParamsSchema = z.object({
+  params: getMealsSchema,
+})
+
 type Meals = z.infer<typeof createMealsSchema>
+type MealsID = z.infer<typeof getMealsSchema>
 
 export async function mealsRoutes(app: FastifyInstance) {
   app.post(
@@ -50,6 +59,25 @@ export async function mealsRoutes(app: FastifyInstance) {
     async (request) => {
       const sessionId = request.cookies.sessionId
       const meals = await knex('meals').where('user_id', sessionId).select()
+
+      return {
+        meals,
+      }
+    },
+  )
+
+  app.get(
+    '/:id',
+    {
+      preHandler: [validateParams(getMealsParamsSchema), CheckSessionId],
+    },
+    async (request) => {
+      const sessionId = request.cookies.sessionId
+      const { id } = request.params as MealsID
+      const meals = await knex('meals').where({
+        user_id: sessionId,
+        id,
+      })
 
       return {
         meals,
